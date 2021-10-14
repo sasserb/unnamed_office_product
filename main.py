@@ -1,4 +1,6 @@
 
+import tkinter as tk
+
 INF = 10000000
 NUM_NODES = 1000
 
@@ -102,20 +104,14 @@ class Node:
         listo.insert(0, self)
         # print(listo)
 
+window = tk.Tk()
 
+window.title('Get ready to draw')
+canvas = tk.Canvas(window, width=1000, height=1000).pack()
+
+tk.mainloop()
 list_net =[['s', [1,5],[2,2]], [[1,5],[3,2],[4,1]], [[2,2],[5,10]], [[3,2],[8,1]], [[4,1],[8,1]], [[5,10],[6,1]], [[8,1],[7,5]], [[6,1],[7,5]],[[7,5],'e']]
 main_net = Network(generation_key=list_net)
-'''
-place = Node(5, main_net.avail_addr.pop())
-place.outgoing.append(main_net.end_node)
-main_net.start_node.add_successor(place)
-place2 = Node(20, main_net.avail_addr.pop())
-place2.outgoing.append(main_net.end_node)
-main_net.start_node.add_successor(place2)
-place3 = Node(25, main_net.avail_addr.pop())
-place3.outgoing.append(main_net.end_node)
-place.add_successor(place3)
-place.rem_successor(main_net.end_node)
-'''
+
 main_net.solve_net()
 print(main_net.PFT)
