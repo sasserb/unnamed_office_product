@@ -123,15 +123,50 @@ mycanvas.grid(row=1, column=1)
 Mouse = MousePosition()
 #theoval = mycanvas.createoval(300, 200, 400, 500)
 
+def confirm_and_close(popup_fillout, oval_id, name_entry, cost_entry):
+    new_name = name_entry.get()
+    new_cost = cost_entry.get()
+
+    mycanvas.addtag_withtag('name=' + new_name, oval_id)
+    mycanvas.addtag_withtag('cost=' + new_cost, oval_id)
+
+    #mycanvas.itemconfig(oval_id, text=new_name)
+
+    popup_fillout.destroy()
+
+
 def edit_node(oval_id):
-    pass
+    popup_fillout = tk.Toplevel()
+    tk.Label(popup_fillout, text='Node Information').grid(row=0, column=0, columnspan=2)
+    tags_list = mycanvas.gettags(oval_id)
+    old_name = ''
+    old_cost = ''
+    for tag in tags_list:
+        if 'name=' in tag:
+            old_name = tag.replace('name=', '')
+            mycanvas.dtag(oval_id, tag)
+        elif 'cost=' in tag:
+            old_cost = tag.replace('cost=', '')
+            mycanvas.dtag(oval_id, tag)
+    tk.Label(popup_fillout, text="Node Name:").grid(row=1, column=0)
+    name_entry = tk.Entry(popup_fillout, width=20)
+    name_entry.insert(0, old_name)
+    name_entry.grid(row=1, column=1)
+
+    tk.Label(popup_fillout, text="Node Cost:").grid(row=2, column=0)
+    cost_entry = tk.Entry(popup_fillout, width=20)
+    cost_entry.insert(0, old_cost)
+    cost_entry.grid(row=2, column=1)
+
+    tk.Button(popup_fillout, text='Confirm', command=lambda pop=popup_fillout, oval=oval_id, name=name_entry, cost=cost_entry: confirm_and_close(pop, oval, name, cost)).grid(row=4, column=0)
+
 
 def on_left_click(event):
     #print('Button-2 pressed at x = % d, y = % d' % (event.x, event.y))
     if draw_mode.get() == 1:
         my_oval = mycanvas.create_oval(event.x - OVAL_X_OFFSET, event.y + OVAL_Y_OFFSET, event.x + OVAL_X_OFFSET, event.y - OVAL_Y_OFFSET, fill='white')
         '''Create pop up window to fill in info for'''
-        edit_node(my_oval)
+        #edit_node(my_oval)
 
         mycanvas.addtag_withtag('node', my_oval)
         print(my_oval)
@@ -155,7 +190,14 @@ def on_left_click(event):
         pass
 
     elif draw_mode.get() == 4:
-        pass
+        if mycanvas.find_withtag('current'):
+            if 'node' in mycanvas.gettags(mycanvas.find_withtag('current')):
+                ovoid = mycanvas.find_withtag('current')
+                edit_node(ovoid)
+
+    elif draw_mode.get() == 5:
+        if mycanvas.find_withtag('current'):
+            mycanvas.delete(mycanvas.find_withtag('current'))
 
 
 mycanvas.bind("<Button>", on_left_click)
