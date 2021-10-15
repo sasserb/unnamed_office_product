@@ -106,37 +106,67 @@ class Node:
         self.color = 'b'
         listo.insert(0, self)
 
+class MousePosition():
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+
+    def motion(self, event):
+        self.x = event.x
+        self.y = event.y
+
 window = tk.Tk()
 
 window.title('Get ready to draw')
 mycanvas = tk.Canvas(window, width=1250, height=1000, bg='white')
 mycanvas.grid(row=1, column=1)
+Mouse = MousePosition()
 #theoval = mycanvas.createoval(300, 200, 400, 500)
 
+def edit_node(oval_id):
+    pass
 
 def on_left_click(event):
-    pass
     #print('Button-2 pressed at x = % d, y = % d' % (event.x, event.y))
     if draw_mode.get() == 1:
         my_oval = mycanvas.create_oval(event.x - OVAL_X_OFFSET, event.y + OVAL_Y_OFFSET, event.x + OVAL_X_OFFSET, event.y - OVAL_Y_OFFSET, fill='white')
+        '''Create pop up window to fill in info for'''
+        edit_node(my_oval)
+
         mycanvas.addtag_withtag('node', my_oval)
         print(my_oval)
         print(mycanvas.gettags(my_oval))
     elif draw_mode.get() == 2:
+        global last_clicked_node
         if mycanvas.find_withtag('current'):
             clicked_object_id = mycanvas.find_withtag('current')
             if 'node' in mycanvas.gettags(clicked_object_id):
-                node_coords = mycanvas.coords(clicked_object_id)
-                my_arrow = mycanvas.create_line(node_coords[2], node_coords[3] - OVAL_Y_OFFSET, 200, 200, arrow="last")
-                mycanvas.addtag_withtag('vertex', my_arrow)
+                if last_clicked_node is None:
+                    last_clicked_node = mycanvas.coords(clicked_object_id)
+                else:
+                    node_coords = mycanvas.coords(clicked_object_id)
+                    my_arrow = mycanvas.create_line(last_clicked_node[2], last_clicked_node[3] - OVAL_Y_OFFSET,
+                                                    node_coords[0], node_coords[1] + OVAL_Y_OFFSET,
+                                                    arrow="last")
+                    mycanvas.addtag_withtag('vertex', my_arrow)
+                    last_clicked_node = None
 
     elif draw_mode.get() == 3:
         pass
 
+    elif draw_mode.get() == 4:
+        pass
+
 
 mycanvas.bind("<Button>", on_left_click)
+mycanvas.bind("<Motion>", lambda event: Mouse.motion(event))
 
 '''Radio Buttons for selecting what a click does'''
+global last_clicked_node
+last_clicked_node = None
+def radio_button_reset():
+    global last_clicked_node
+    last_clicked_node = None
 
 radio_button_frame = tk.Frame(window)
 radio_button_frame.grid(row=1, column=0)
@@ -144,12 +174,16 @@ radio_button_frame.grid(row=1, column=0)
 draw_mode = tk.IntVar()
 draw_mode.set(1)
 
-R1 = tk.Radiobutton(radio_button_frame, text="Draw Nodes", var=draw_mode, value=1)
+R1 = tk.Radiobutton(radio_button_frame, text="Draw Nodes", var=draw_mode, value=1, command=radio_button_reset)
 R1.pack()
-R2 = tk.Radiobutton(radio_button_frame, text="Connect Nodes", var=draw_mode, value=2)
+R2 = tk.Radiobutton(radio_button_frame, text="Connect Nodes", var=draw_mode, value=2, command=radio_button_reset)
 R2.pack()
-R3 = tk.Radiobutton(radio_button_frame, text="Select", var=draw_mode, value=3)
+R3 = tk.Radiobutton(radio_button_frame, text="Select", var=draw_mode, value=3, command=radio_button_reset)
 R3.pack()
+R4 = tk.Radiobutton(radio_button_frame, text="Edit", var=draw_mode, value=4, command=radio_button_reset)
+R4.pack()
+R5 = tk.Radiobutton(radio_button_frame, text="Delete", var=draw_mode, value=5, command=radio_button_reset)
+R5.pack()
 
 tk.mainloop()
 list_net =[['s', [1,5],[2,2]], [[1,5],[3,2],[4,1]], [[2,2],[5,10]], [[3,2],[8,1]], [[4,1],[8,1]], [[5,10],[6,1]], [[8,1],[7,5]], [[6,1],[7,5]],[[7,5],'e']]
