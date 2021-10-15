@@ -4,6 +4,9 @@ import tkinter as tk
 INF = 10000000
 NUM_NODES = 1000
 
+OVAL_Y_OFFSET = 20
+OVAL_X_OFFSET = 40
+
 
 class Network:
 
@@ -106,18 +109,47 @@ class Node:
 window = tk.Tk()
 
 window.title('Get ready to draw')
-mycanvas = tk.Canvas(window, width=1000, height=1000, bg='white')
-mycanvas.pack()
+mycanvas = tk.Canvas(window, width=1250, height=1000, bg='white')
+mycanvas.grid(row=1, column=1)
 #theoval = mycanvas.createoval(300, 200, 400, 500)
 
 
 def on_left_click(event):
     pass
     #print('Button-2 pressed at x = % d, y = % d' % (event.x, event.y))
-    my_oval = mycanvas.create_oval(event.x - 20, event.y + 20, event.x + 20, event.y - 20)
+    if draw_mode.get() == 1:
+        my_oval = mycanvas.create_oval(event.x - OVAL_X_OFFSET, event.y + OVAL_Y_OFFSET, event.x + OVAL_X_OFFSET, event.y - OVAL_Y_OFFSET, fill='white')
+        mycanvas.addtag_withtag('node', my_oval)
+        print(my_oval)
+        print(mycanvas.gettags(my_oval))
+    elif draw_mode.get() == 2:
+        if mycanvas.find_withtag('current'):
+            clicked_object_id = mycanvas.find_withtag('current')
+            if 'node' in mycanvas.gettags(clicked_object_id):
+                node_coords = mycanvas.coords(clicked_object_id)
+                my_arrow = mycanvas.create_line(node_coords[2], node_coords[3] - OVAL_Y_OFFSET, 200, 200, arrow="last")
+                mycanvas.addtag_withtag('vertex', my_arrow)
+
+    elif draw_mode.get() == 3:
+        pass
 
 
-window.bind("<Button>", on_left_click)
+mycanvas.bind("<Button>", on_left_click)
+
+'''Radio Buttons for selecting what a click does'''
+
+radio_button_frame = tk.Frame(window)
+radio_button_frame.grid(row=1, column=0)
+
+draw_mode = tk.IntVar()
+draw_mode.set(1)
+
+R1 = tk.Radiobutton(radio_button_frame, text="Draw Nodes", var=draw_mode, value=1)
+R1.pack()
+R2 = tk.Radiobutton(radio_button_frame, text="Connect Nodes", var=draw_mode, value=2)
+R2.pack()
+R3 = tk.Radiobutton(radio_button_frame, text="Select", var=draw_mode, value=3)
+R3.pack()
 
 tk.mainloop()
 list_net =[['s', [1,5],[2,2]], [[1,5],[3,2],[4,1]], [[2,2],[5,10]], [[3,2],[8,1]], [[4,1],[8,1]], [[5,10],[6,1]], [[8,1],[7,5]], [[6,1],[7,5]],[[7,5],'e']]
