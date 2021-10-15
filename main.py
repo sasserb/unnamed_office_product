@@ -102,12 +102,22 @@ class Node:
                 n.topological_sort(listo)
         self.color = 'b'
         listo.insert(0, self)
-        # print(listo)
 
 window = tk.Tk()
 
 window.title('Get ready to draw')
-canvas = tk.Canvas(window, width=1000, height=1000).pack()
+mycanvas = tk.Canvas(window, width=1000, height=1000, bg='white')
+mycanvas.pack()
+#theoval = mycanvas.createoval(300, 200, 400, 500)
+
+
+def on_left_click(event):
+    pass
+    #print('Button-2 pressed at x = % d, y = % d' % (event.x, event.y))
+    my_oval = mycanvas.create_oval(event.x - 20, event.y + 20, event.x + 20, event.y - 20)
+
+
+window.bind("<Button>", on_left_click)
 
 tk.mainloop()
 list_net =[['s', [1,5],[2,2]], [[1,5],[3,2],[4,1]], [[2,2],[5,10]], [[3,2],[8,1]], [[4,1],[8,1]], [[5,10],[6,1]], [[8,1],[7,5]], [[6,1],[7,5]],[[7,5],'e']]
