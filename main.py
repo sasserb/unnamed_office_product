@@ -131,6 +131,12 @@ def confirm_and_close(popup_fillout, oval_id, name_entry, cost_entry):
     mycanvas.addtag_withtag('cost=' + new_cost, oval_id)
 
     #mycanvas.itemconfig(oval_id, text=new_name)
+    tags_list = mycanvas.gettags(oval_id)
+    name_id = -1
+    for tag in tags_list:
+        if 'nodenameid:' in tag:
+            name_id = tag.replace('nodenameid:', '')
+    mycanvas.itemconfigure(name_id, text=f'{new_name}\n{new_cost}')
 
     popup_fillout.destroy()
 
@@ -165,10 +171,14 @@ def on_left_click(event):
     #print('Button-2 pressed at x = % d, y = % d' % (event.x, event.y))
     if draw_mode.get() == 1:
         my_oval = mycanvas.create_oval(event.x - OVAL_X_OFFSET, event.y + OVAL_Y_OFFSET, event.x + OVAL_X_OFFSET, event.y - OVAL_Y_OFFSET, fill='white')
+        my_text = mycanvas.create_text(event.x, event.y, text='', state=tk.DISABLED)
         '''Create pop up window to fill in info for'''
         #edit_node(my_oval)
 
         mycanvas.addtag_withtag('node', my_oval)
+        mycanvas.addtag_withtag(f'nodenameid:{my_text}', my_oval)
+        mycanvas.addtag_withtag('nodename', my_text)
+        mycanvas.addtag_withtag(f'nodeid:{my_oval}', my_text)
         print(my_oval)
         print(mycanvas.gettags(my_oval))
     elif draw_mode.get() == 2:
