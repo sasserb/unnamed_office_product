@@ -7,17 +7,19 @@ NUM_NODES = 1000
 OVAL_Y_OFFSET = 20
 OVAL_X_OFFSET = 40
 
+global main_net
+
 
 class Network:
 
-    def __init__(self, generation_key=[['s', 'e']]):
+    def __init__(self, generation_key=[['start', 'end']]):
         self.avail_addr = [x for x in range(NUM_NODES)]
-        self.start_node = Node(0, 's')
-        self.end_node = Node(0, 'e')
+        self.start_node = Node(0, 'start')
+        self.end_node = Node(0, 'end')
 
         self.every_node = {self.start_node, self.end_node}
 
-        self.curr_addrs = {'e', 's'}
+        self.curr_addrs = {'end', 'start'}
 
         self.PFT = None
         self.topo_sort_list = []
@@ -25,10 +27,10 @@ class Network:
         for i in generation_key:
             root = None
             for j in i:
-                if j is 's':
-                    root = 's'
+                if j is 'start':
+                    root = 'start'
                     root_node = self.start_node
-                elif j is 'e':
+                elif j is 'end':
                     root_node.add_successor(self.end_node)
                 else:
                     if root is None:
@@ -106,6 +108,7 @@ class Node:
         self.color = 'b'
         listo.insert(0, self)
 
+
 class MousePosition():
     def __init__(self):
         self.x = 0
@@ -114,6 +117,7 @@ class MousePosition():
     def motion(self, event):
         self.x = event.x
         self.y = event.y
+
 
 window = tk.Tk()
 
@@ -177,10 +181,12 @@ def on_left_click(event):
 
         mycanvas.addtag_withtag('node', my_oval)
         mycanvas.addtag_withtag(f'nodenameid:{my_text}', my_oval)
+        mycanvas.addtag_withtag(f'addr:{my_oval}', my_oval)
         mycanvas.addtag_withtag('nodename', my_text)
         mycanvas.addtag_withtag(f'nodeid:{my_oval}', my_text)
-        print(my_oval)
-        print(mycanvas.gettags(my_oval))
+        # print(my_oval)
+        # print(mycanvas.gettags(my_oval))
+
     elif draw_mode.get() == 2:
         global last_clicked_node
         if mycanvas.find_withtag('current'):
@@ -188,12 +194,15 @@ def on_left_click(event):
             if 'node' in mycanvas.gettags(clicked_object_id):
                 if last_clicked_node is None:
                     last_clicked_node = mycanvas.coords(clicked_object_id)
+                    last_clicked_node.append(clicked_object_id)
                 else:
                     node_coords = mycanvas.coords(clicked_object_id)
                     my_arrow = mycanvas.create_line(last_clicked_node[2], last_clicked_node[3] - OVAL_Y_OFFSET,
                                                     node_coords[0], node_coords[1] + OVAL_Y_OFFSET,
                                                     arrow="last")
                     mycanvas.addtag_withtag('vertex', my_arrow)
+
+                    mycanvas.addtag_withtag(f'to:{clicked_object_id[0]}', last_clicked_node[4])
                     last_clicked_node = None
 
     elif draw_mode.get() == 3:
@@ -216,9 +225,100 @@ mycanvas.bind("<Motion>", lambda event: Mouse.motion(event))
 '''Radio Buttons for selecting what a click does'''
 global last_clicked_node
 last_clicked_node = None
+
+
 def radio_button_reset():
     global last_clicked_node
     last_clicked_node = None
+
+
+def solve_network2(node_addr):
+    twolist = []
+
+    if node_addr is 'start':
+        twolist.append('start')
+        node_id = mycanvas.find_withtag('name=start')
+        '''
+    elif node_addr is 'end':
+        twolist.append('end')
+        node_id = mycanvas.find_withtag('name=end')
+        '''
+    else:
+        node_id = mycanvas.find_withtag(f'addr:{node_addr}')
+        nodecost = 0
+        for tag in mycanvas.gettags(node_id):
+            if 'cost=' in tag:
+                if tag.replace('cost=', '') is '':
+                    nodecost = 0
+                else:
+                    nodecost = float(tag.replace('cost=', ''))
+        twolist.append([node_addr, nodecost])
+
+    for tag in mycanvas.gettags(node_id):
+        adjcostlist = []
+        if 'to:' in tag:
+            adjaddr = int(tag.replace('to:', ''))
+            adjid = mycanvas.find_withtag(f'addr:{adjaddr}')
+            adjcost = 0
+            for adjtag in mycanvas.gettags(adjid):
+                if 'cost=' in adjtag:
+                    if adjtag.replace('cost=', '') is '':
+                        adjcost = 0
+                    else:
+                        adjcost = float(adjtag.replace('cost=', ''))
+            adjcostlist = [adjaddr, adjcost]
+
+        if adjcostlist:
+            twolist.append(adjcostlist)
+
+    return twolist
+
+
+def grab_every_addr(addrset, addr):
+
+    nodeid = mycanvas.find_withtag(f'addr:{addr}')
+    listo = []
+
+    for tag in mycanvas.gettags(nodeid):
+        if 'to:' in tag:
+            addrset.add(int(tag.replace('to:', '')))
+            listo.append(int(tag.replace('to:', '')))
+
+    for item in listo:
+        addrset = grab_every_addr(addrset, item)
+
+    return addrset
+
+
+def solve_network():
+    pass
+    onelist = []
+    addrset = set()
+    startid = mycanvas.find_withtag('name=start')
+    addrset.add(int(startid[0]))
+    for tag in mycanvas.gettags(startid):
+        # print(tag)
+        if 'to:' in tag:
+            addrset.add(int(tag.replace('to:', '')))
+
+    addrset = grab_every_addr(addrset, startid[0])
+
+    for x in addrset:
+        onelist.append(solve_network2(x))
+    print(onelist)
+
+    for i in range(len(onelist)):
+        for j in range(len(onelist[i])):
+            if mycanvas.find_withtag('name=start') == mycanvas.find_withtag(f'addr:{onelist[i][j][0]}'):
+                onelist[i][j] = 'start'
+            elif mycanvas.find_withtag('name=end') == mycanvas.find_withtag(f'addr:{onelist[i][j][0]}'):
+                onelist[i][j] = 'end'
+    print(onelist)
+
+    main_net = Network(generation_key=onelist)
+    main_net.solve_net()
+    print(main_net.PFT)
+
 
 radio_button_frame = tk.Frame(window)
 radio_button_frame.grid(row=1, column=0)
@@ -237,9 +337,14 @@ R4.pack()
 R5 = tk.Radiobutton(radio_button_frame, text="Delete", var=draw_mode, value=5, command=radio_button_reset)
 R5.pack()
 
+trigger_button = tk.Button(window, text='Solve Network', command=solve_network)
+trigger_button.grid(row=1, column=2)
+
 tk.mainloop()
-list_net =[['s', [1,5],[2,2]], [[1,5],[3,2],[4,1]], [[2,2],[5,10]], [[3,2],[8,1]], [[4,1],[8,1]], [[5,10],[6,1]], [[8,1],[7,5]], [[6,1],[7,5]],[[7,5],'e']]
+'''
+list_net = [['start', [1,5],[2,2]], [[1,5],[3,2],[4,1]], [[2,2],[5,10]], [[3,2],[8,1]], [[4,1],[8,1]], [[5,10],[6,1]], [[8,1],[7,5]], [[6,1],[7,5]],[[7,5],'end']]
 main_net = Network(generation_key=list_net)
 
 main_net.solve_net()
-print(main_net.PFT)
+'''
+# print(main_net.PFT)
