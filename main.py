@@ -127,6 +127,16 @@ mycanvas.grid(row=1, column=1)
 Mouse = MousePosition()
 #theoval = mycanvas.createoval(300, 200, 400, 500)
 
+
+''' Function Name: confirm_and_close
+    Purpuse: will save the changes from the edit pop up and update the text on the oval; is trigger from the confirm
+    button on the edit window
+    Arguments: popup_fillout: tk.Toplevel(); the frame that the edit interface is loaded in
+                oval_id: (x,); the unique identifier of the node that is being edited
+                name_entry: tk.Entry(); the tkinter widget that holds the text of the name
+                cost_entry: tk.Entry(); the tkinter widgit that holds the text of the cost'''
+
+
 def confirm_and_close(popup_fillout, oval_id, name_entry, cost_entry):
     new_name = name_entry.get()
     new_cost = cost_entry.get()
@@ -143,6 +153,11 @@ def confirm_and_close(popup_fillout, oval_id, name_entry, cost_entry):
     mycanvas.itemconfigure(name_id, text=f'{new_name}\n{new_cost}')
 
     popup_fillout.destroy()
+
+
+''' Function Name: edit_node
+    Purpose: launches the edit window for the node that's clicked on
+    Arguments: oval_id: (x,); the unique identifier of the node that's being edited'''
 
 
 def edit_node(oval_id):
@@ -171,36 +186,50 @@ def edit_node(oval_id):
     tk.Button(popup_fillout, text='Confirm', command=lambda pop=popup_fillout, oval=oval_id, name=name_entry, cost=cost_entry: confirm_and_close(pop, oval, name, cost)).grid(row=4, column=0)
 
 
+''' Function Name: on_left_click
+    Purpose: triggers everytime the LMB is clicked while in the canvas; will do a multitude of things depending on
+    which mode is selected in the checkboxes
+    Arguments: event: the event of the left click; event.x and event.y will give coords of click'''
+
+
 def on_left_click(event):
-    #print('Button-2 pressed at x = % d, y = % d' % (event.x, event.y))
+
+    # The mode selected is draw node
     if draw_mode.get() == 1:
+        # created the node and text
         my_oval = mycanvas.create_oval(event.x - OVAL_X_OFFSET, event.y + OVAL_Y_OFFSET, event.x + OVAL_X_OFFSET, event.y - OVAL_Y_OFFSET, fill='white')
         my_text = mycanvas.create_text(event.x, event.y, text='', state=tk.DISABLED)
         '''Create pop up window to fill in info for'''
-        #edit_node(my_oval)
+        # edit_node(my_oval)
 
+        # adds the tags for the node and name
         mycanvas.addtag_withtag('node', my_oval)
         mycanvas.addtag_withtag(f'nodenameid:{my_text}', my_oval)
         mycanvas.addtag_withtag(f'addr:{my_oval}', my_oval)
         mycanvas.addtag_withtag('nodename', my_text)
         mycanvas.addtag_withtag(f'nodeid:{my_oval}', my_text)
-        # print(my_oval)
-        # print(mycanvas.gettags(my_oval))
-
+        
+    # The mode selected is connect nodes
     elif draw_mode.get() == 2:
         global last_clicked_node
         if mycanvas.find_withtag('current'):
+            # if the LMB was triggered on an object in the canvas
             clicked_object_id = mycanvas.find_withtag('current')
+            # if the object clicked was a node
             if 'node' in mycanvas.gettags(clicked_object_id):
+                # if the node clicked is not the second one
                 if last_clicked_node is None:
                     last_clicked_node = mycanvas.coords(clicked_object_id)
                     last_clicked_node.append(clicked_object_id)
+                # the node clicked is the second one
                 else:
                     node_coords = mycanvas.coords(clicked_object_id)
                     my_arrow = mycanvas.create_line(last_clicked_node[2], last_clicked_node[3] - OVAL_Y_OFFSET,
                                                     node_coords[0], node_coords[1] + OVAL_Y_OFFSET,
                                                     arrow="last")
                     mycanvas.addtag_withtag('vertex', my_arrow)
+                    mycanvas.addtag_withtag(f'arrowto:{clicked_object_id[0]}', my_arrow)
+                    mycanvas.addtag_withtag(f'arrowfrom:{last_clicked_node[4]}', my_arrow)
 
                     mycanvas.addtag_withtag(f'to:{clicked_object_id[0]}', last_clicked_node[4])
                     last_clicked_node = None
@@ -216,7 +245,23 @@ def on_left_click(event):
 
     elif draw_mode.get() == 5:
         if mycanvas.find_withtag('current'):
-            mycanvas.delete(mycanvas.find_withtag('current'))
+            if 'node' in mycanvas.gettags('current'):
+                nameid = ''
+                for tag in mycanvas.gettags('current'):
+                    if 'nodenameid:' in tag:
+                        nameid = tag.replace('nodenameid:', '')
+                mycanvas.delete(mycanvas.find_withtag(nameid))
+
+                mycanvas.delete(mycanvas.find_withtag('current'))
+
+                if mycanvas.find_withtag(f'arrowfrom:{mycanvas.find_withtag("current")}'):
+                    pass
+                if mycanvas.find_withtag(f'arrowto:{mycanvas.find_withtag("current")}'):
+                    pass
+
+            elif 'vertex' in mycanvas.gettags('current'):
+
+                mycanvas.delete(mycanvas.find_withtag('current'))
 
 
 mycanvas.bind("<Button>", on_left_click)
@@ -232,7 +277,15 @@ def radio_button_reset():
     last_clicked_node = None
 
 
-def solve_network2(node_addr):
+
+''' Function Name: solve_node
+    Purpose: is called by solve_network and will return the list of all the outputs and cost of the
+    outgoing connections
+    Arguments:
+            node_addr: int; the unique address the node node that's being looked at'''
+
+
+def solve_node(node_addr):
     twolist = []
 
     if node_addr is 'start':
@@ -274,6 +327,13 @@ def solve_network2(node_addr):
     return twolist
 
 
+''' Function Name: grab_every_addr
+    Purpose: the function is called recursively in order to add every address in the network to the addrset variable
+    Arguments:
+            addrset: set; the set of every address in the network at the end, should only be added to
+            addr: int; the addr of the node to be searched from'''
+
+
 def grab_every_addr(addrset, addr):
 
     nodeid = mycanvas.find_withtag(f'addr:{addr}')
@@ -290,8 +350,13 @@ def grab_every_addr(addrset, addr):
     return addrset
 
 
+''' Function Name: solve_network
+    Purpose: is called when the solve network button is pressed; will call and do everything necessary in order to
+    completely solve the network'''
+
+
 def solve_network():
-    pass
+    
     onelist = []
     addrset = set()
     startid = mycanvas.find_withtag('name=start')
@@ -301,10 +366,12 @@ def solve_network():
         if 'to:' in tag:
             addrset.add(int(tag.replace('to:', '')))
 
+    # after this line, addrset will contain every address in the network
     addrset = grab_every_addr(addrset, startid[0])
 
+    # for every address in the network, create the connections list
     for x in addrset:
-        onelist.append(solve_network2(x))
+        onelist.append(solve_node(x))
     print(onelist)
 
     for i in range(len(onelist)):
@@ -315,6 +382,7 @@ def solve_network():
                 onelist[i][j] = 'end'
     print(onelist)
 
+    global main_net
     main_net = Network(generation_key=onelist)
     main_net.solve_net()
     print(main_net.PFT)
@@ -341,10 +409,3 @@ trigger_button = tk.Button(window, text='Solve Network', command=solve_network)
 trigger_button.grid(row=1, column=2)
 
 tk.mainloop()
-'''
-list_net = [['start', [1,5],[2,2]], [[1,5],[3,2],[4,1]], [[2,2],[5,10]], [[3,2],[8,1]], [[4,1],[8,1]], [[5,10],[6,1]], [[8,1],[7,5]], [[6,1],[7,5]],[[7,5],'end']]
-main_net = Network(generation_key=list_net)
-
-main_net.solve_net()
-'''
-# print(main_net.PFT)
